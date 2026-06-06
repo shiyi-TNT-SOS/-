@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI带货视频故事板工具</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f11;--bg2:#1a1a1f;--bg3:#222228;--bg4:#2a2a32;
+  --border:#2e2e38;--border2:#3a3a48;
+  --text:#e8e8f0;--text2:#9898b0;--text3:#5a5a70;
+  --purple:#7F77DD;--purple2:#534AB7;--purple-bg:#1e1c38;--purple-light:#EEEDFE;
+  --green:#1D9E75;--green-bg:#0d2420;--green-light:#E1F5EE;
+  --green1:#EAF3DE;--green8:#27500A;
+  --blue1:#E6F1FB;--blue8:#0C447C;
+  --amber1:#FAEEDA;--amber8:#633806;
+  --red:#E24B4A;--red-bg:#2a1515;
+  --radius:8px;--radius-lg:12px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'SF Mono','Fira Code',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6;min-height:100vh}
+.wrap{max-width:760px;margin:0 auto;padding:2rem 1.25rem 4rem}
+.header{display:flex;align-items:center;gap:10px;margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:0.5px solid var(--border)}
+.header-icon{width:32px;height:32px;background:var(--purple-bg);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--purple);font-size:16px}
+.header h1{font-size:16px;font-weight:500;color:var(--text)}
+.header p{font-size:12px;color:var(--text3)}
+.nav{display:flex;border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1.5rem}
+.ni{flex:1;padding:10px 6px;text-align:center;cursor:pointer;font-size:12px;color:var(--text2);border-right:0.5px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--bg2);transition:all .15s}
+.ni:last-child{border-right:none}
+.ni.active{background:var(--bg3);color:var(--text)}
+.ni .nn{width:20px;height:20px;border-radius:50%;border:0.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--text2)}
+.ni.active .nn{background:var(--purple);border-color:var(--purple);color:#fff}
+.ni.done .nn{background:var(--green);border-color:var(--green);color:#fff}
+.panel{display:none}.panel.active{display:block}
+.prog-top{display:flex;justify-content:space-between;margin-bottom:6px}
+.prog-pct{font-size:12px;font-weight:500;color:var(--purple)}
+.prog-txt{font-size:12px;color:var(--text3)}
+.prog-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:1.5rem}
+.prog-fill{height:100%;background:var(--purple);border-radius:2px;transition:width .4s}
+.card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:12px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-title{font-size:14px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:7px}
+.card-title svg{color:var(--purple)}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field{margin-bottom:8px}
+.field label{display:block;font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+input,select,textarea{width:100%;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg3);color:var(--text);padding:8px 11px;font-family:var(--font);transition:border-color .15s;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--purple)}
+input.ok{border-color:var(--green)!important;background:var(--green-bg)}
+select option{background:var(--bg3)}
+textarea{resize:vertical;min-height:58px;line-height:1.5}
+.ai-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:10px}
+.ai-row>div{flex:1}
+.ai-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:var(--radius);border:0.5px solid var(--purple2);color:var(--purple);background:var(--purple-bg);cursor:pointer;transition:all .15s;white-space:nowrap;height:38px;flex-shrink:0}
+.ai-btn:hover{background:#252245}
+.ai-btn:disabled{opacity:.4;cursor:not-allowed}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin .8s linear infinite}
+.status{display:none;align-items:center;gap:7px;font-size:12px;padding:8px 12px;border-radius:var(--radius);margin-bottom:10px}
+.status.show{display:flex}
+.status.loading{background:var(--purple-bg);color:var(--purple);border:0.5px solid var(--purple2)}
+.status.done{background:var(--green-bg);color:#5DCAA5;border:0.5px solid #0F6E56}
+.status.err{background:var(--red-bg);color:#F09595;border:0.5px solid #A32D2D}
+.tag-group{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.tag{font-size:12px;padding:4px 10px;border-radius:20px;border:0.5px solid var(--border2);color:var(--text2);background:var(--bg3);cursor:pointer;transition:all .15s;user-select:none}
+.tag.on{border-color:var(--purple);color:#AFA9EC;background:var(--purple-bg)}
+.seg-block{border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:10px}
+.seg-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg3);cursor:pointer;user-select:none}
+.seg-bl{display:flex;align-items:center;gap:8px}
+.seg-pill{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px}
+.s1p{background:var(--green1);color:var(--green8)}
+.s2p{background:var(--blue1);color:var(--blue8)}
+.s3p{background:var(--purple-light);color:var(--purple2)}
+.seg-name{font-size:13px;font-weight:500;color:var(--text)}
+.seg-time{font-size:11px;color:var(--text3)}
+.seg-body{padding:14px;background:var(--bg2)}
+.shot-row{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:12px}
+.shot{border:0.5px solid var(--border);border-radius:6px;aspect-ratio:9/16;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;background:var(--bg3);padding:3px;position:relative}
+.shot:hover{border-color:var(--border2)}
+.shot.sel{border-color:var(--purple);background:var(--purple-bg)}
+.shot .sn{position:absolute;top:2px;left:4px;font-size:8px;color:var(--text3)}
+.shot .st{font-size:8px;text-align:center;color:var(--text2);line-height:1.3}
+.shot.sel .st{color:#AFA9EC}
+.d3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.dc{background:var(--bg3);border-radius:var(--radius);padding:8px 10px;border:0.5px solid var(--border)}
+.dc label{font-size:10px;color:var(--text3);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.dc input{background:var(--bg2);font-size:12px;padding:5px 8px}
+.timeline{display:flex;height:30px;border-radius:var(--radius);overflow:hidden;border:0.5px solid var(--border);margin-bottom:6px}
+.tl1{background:var(--green1);color:var(--green8);flex:12;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500}
+.tl2{background:var(--blue1);color:var(--blue8);flex:12;border-left:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500}
+.tl3{background:var(--purple-light);color:var(--purple2);flex:11;border-left:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500}
+.tl-ticks{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:14px;padding:0 2px}
+.out-box{background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.8;margin-top:10px;white-space:pre-wrap;font-family:var(--mono);min-height:80px}
+.out-box.has{color:var(--text)}
+.btn-row{display:flex;gap:8px;margin-top:10px}
+.btn-p{flex:1;padding:10px;font-size:13px;font-weight:500;border-radius:var(--radius);cursor:pointer;background:var(--purple);color:#fff;border:none;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
+.btn-p:hover{opacity:.85}.btn-p:active{transform:scale(.98)}
+.btn-s{padding:10px 14px;font-size:13px;border-radius:var(--radius);cursor:pointer;background:transparent;color:var(--text);border:0.5px solid var(--border2);display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap}
+.btn-s:hover{background:var(--bg3)}
+.copy-btn{padding:8px 14px;font-size:12px;border-radius:var(--radius);cursor:pointer;background:transparent;color:var(--text2);border:0.5px solid var(--border);display:flex;align-items:center;gap:5px;transition:all .15s}
+.copy-btn:hover{border-color:var(--border2);color:var(--text)}
+.copy-btn.copied{border-color:var(--green);color:#5DCAA5}
+.nav-foot{display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)}
+.metric-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.metric{background:var(--bg3);border-radius:var(--radius);padding:10px 12px;text-align:center}
+.metric .mv{font-size:20px;font-weight:500;color:var(--text)}
+.metric .ml{font-size:11px;color:var(--text3);margin-top:2px}
+.checklist{display:flex;flex-direction:column;gap:6px}
+.ci{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius);background:var(--bg3);border:0.5px solid var(--border)}
+.ck{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px}
+.ck.ok{background:var(--green-bg);color:#5DCAA5;border:0.5px solid #0F6E56}
+.ck.no{background:var(--bg2);border:0.5px solid var(--border);color:var(--text3)}
+.tip{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:var(--bg3);border-left:2px solid var(--purple);margin-bottom:10px}
+.tip span{font-size:12px;color:var(--text2);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="header">
+  <div class="header-icon">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M15 10l-4 4l6 6l4-16l-18 7l4 2l2 6l3-3"/></svg>
+  </div>
+  <div>
+    <h1>AI带货视频故事板生成工具</h1>
+    <p>Image2故事板 + Seedance 2.0 · 人货场动作运镜节奏全锁定</p>
+  </div>
+</div>
+
+<div class="prog-top">
+  <span class="prog-pct" id="pct">完成度 0%</span>
+  <span class="prog-txt" id="steplbl">第 1 步，共 4 步</span>
+</div>
+<div class="prog-bar"><div class="prog-fill" id="pfill" style="width:0%"></div></div>
+
+<div class="nav">
+  <div class="ni active" onclick="goStep(0)"><div class="nn" id="nn0">1</div><span>产品信息</span></div>
+  <div class="ni" onclick="goStep(1)"><div class="nn" id="nn1">2</div><span>六维锁定</span></div>
+  <div class="ni" onclick="goStep(2)"><div class="nn" id="nn2">3</div><span>故事板</span></div>
+  <div class="ni" onclick="goStep(3)"><div class="nn" id="nn3">4</div><span>提示词</span></div>
+</div>
+
+<div class="panel active" id="p0">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+        产品信息
+      </div>
+    </div>
+    <div class="tip"><span>输入产品名称，点击「AI 一键填充」，自动生成所有字段建议，无次数限制</span></div>
+    <div class="ai-row">
+      <div class="field" style="margin-bottom:0">
+        <label>主推产品名称</label>
+        <input id="f_product" placeholder="例：防晒衣、家务手套、颈部按摩仪…" oninput="updateProg()" />
+      </div>
+      <button class="ai-btn" id="ai_btn" onclick="doFill()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M19 14l.75 2.25L22 17l-2.25.75L19 20l-.75-2.25L16 17l2.25-.75z"/></svg>
+        AI 一键填充
+      </button>
+    </div>
+    <div class="status" id="ai_status">
+      <span class="spin" id="ai_icon">↻</span>
+      <span id="ai_msg"></span>
+    </div>
+    <div class="r3" style="margin-top:8px">
+      <div class="field"><label>核心卖点</label><input id="f_usp" placeholder="10字以内" oninput="updateProg()" /></div>
+      <div class="field"><label>目标人群</label><input id="f_target" placeholder="年龄/性别/场景" oninput="updateProg()" /></div>
+      <div class="field"><label>主讲人设定</label><input id="f_host" placeholder="年龄/外貌/风格" oninput="updateProg()" /></div>
+    </div>
+    <div class="r3">
+      <div class="field"><label>推荐拍摄场景</label><input id="f_scene" placeholder="户外/室内/具体场景" oninput="updateProg()" /></div>
+      <div class="field"><label>视频时长</label>
+        <select id="f_dur"><option>约30秒</option><option selected>约35秒</option><option>约45秒</option><option>约60秒</option></select>
+      </div>
+      <div class="field"><label>拍摄风格</label>
+        <select id="f_style"><option selected>真实生活化</option><option>精致轻奢</option><option>活泼可爱</option><option>专业测评</option></select>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:10px">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      对标视频拆解维度
+    </div>
+    <div class="tag-group">
+      <span class="tag on" onclick="this.classList.toggle('on')">前3秒怎么抓人</span>
+      <span class="tag on" onclick="this.classList.toggle('on')">中间段产品展示</span>
+      <span class="tag" onclick="this.classList.toggle('on')">镜头怎么切</span>
+      <span class="tag" onclick="this.classList.toggle('on')">人物怎么动</span>
+      <span class="tag on" onclick="this.classList.toggle('on')">结尾怎么收</span>
+      <span class="tag" onclick="this.classList.toggle('on')">BGM节奏</span>
+    </div>
+    <div class="field" style="margin-top:10px"><label>对标视频备注</label>
+      <input id="f_ref" placeholder="例：参考某账号爆款，开场用痛点提问，节奏快" />
+    </div>
+  </div>
+  <div class="nav-foot">
+    <div></div>
+    <button class="btn-p" onclick="goStep(1)" style="padding:8px 20px;font-size:13px">下一步 →</button>
+  </div>
+</div>
+
+<div class="panel" id="p1">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:4px">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      六维参数锁定
+    </div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:12px">把人/货/场/动作/运镜/节奏锁进每个分镜，AI 按导演分镜执行，不再乱创作</p>
+    <div class="r3" style="margin-bottom:10px">
+      <div class="field"><label>人 · 人物外貌</label><input id="d_person" placeholder="服装/发型/神态" /></div>
+      <div class="field"><label>货 · 产品外观</label><input id="d_goods" placeholder="颜色/形状/logo" /></div>
+      <div class="field"><label>场 · 拍摄环境</label><input id="d_scene2" placeholder="具体场景描述" /></div>
+    </div>
+    <div class="field" style="margin-bottom:8px"><label>动作</label>
+      <div class="tag-group" id="tg_act">
+        <span class="tag on" onclick="this.classList.toggle('on')">口播讲解</span>
+        <span class="tag" onclick="this.classList.toggle('on')">展示产品</span>
+        <span class="tag" onclick="this.classList.toggle('on')">演示使用</span>
+        <span class="tag" onclick="this.classList.toggle('on')">对比展示</span>
+        <span class="tag" onclick="this.classList.toggle('on')">情绪反应</span>
+        <span class="tag" onclick="this.classList.toggle('on')">指向引导</span>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:8px"><label>运镜</label>
+      <div class="tag-group" id="tg_cam">
+        <span class="tag on" onclick="this.classList.toggle('on')">中景</span>
+        <span class="tag on" onclick="this.classList.toggle('on')">近景</span>
+        <span class="tag" onclick="this.classList.toggle('on')">特写</span>
+        <span class="tag" onclick="this.classList.toggle('on')">全景</span>
+        <span class="tag" onclick="this.classList.toggle('on')">推镜</span>
+        <span class="tag" onclick="this.classList.toggle('on')">拉镜</span>
+        <span class="tag" onclick="this.classList.toggle('on')">环绕</span>
+      </div>
+    </div>
+    <div class="field"><label>节奏</label>
+      <div class="tag-group" id="tg_rhy">
+        <span class="tag on" onclick="this.classList.toggle('on')">快切节奏</span>
+        <span class="tag" onclick="this.classList.toggle('on')">慢镜特写</span>
+        <span class="tag on" onclick="this.classList.toggle('on')">关键词停顿</span>
+        <span class="tag" onclick="this.classList.toggle('on')">音乐卡点</span>
+        <span class="tag" onclick="this.classList.toggle('on')">渐进加速</span>
+      </div>
+    </div>
+  </div>
+  <div class="nav-foot">
+    <button class="btn-s" onclick="goStep(0)">← 上一步</button>
+    <button class="btn-p" onclick="goStep(2)" style="padding:8px 20px;font-size:13px">下一步 →</button>
+  </div>
+</div>
+
+<div class="panel" id="p2">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:8px">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="6" x2="6" y2="6"/><line x1="2" y1="18" x2="6" y2="18"/></svg>
+      视频节奏时间轴
+    </div>
+    <div class="timeline">
+      <div class="tl1">第1段·开场痛点</div>
+      <div class="tl2">第2段·功能验证</div>
+      <div class="tl3">第3段·转化收尾</div>
+    </div>
+    <div class="tl-ticks"><span>0s</span><span>5s</span><span>10s</span><span>15s</span><span>20s</span><span>25s</span><span>30s</span><span>35s</span></div>
+  </div>
+
+  <div class="seg-block">
+    <div class="seg-bar" onclick="toggleSeg(1)">
+      <div class="seg-bl"><span class="seg-pill s1p">第1段</span><span class="seg-name">开场痛点 + 产品展示</span><span class="seg-time">0–12秒</span></div>
+      <span id="chev1" style="color:var(--text3);font-size:14px">▾</span>
+    </div>
+    <div class="seg-body" id="sb1">
+      <div class="tip"><span>前3秒黄金窗口，用痛点或反常识开场，让用户停下来。</span></div>
+      <div class="shot-row" id="shots_a"></div>
+      <div class="d3">
+        <div class="dc"><label>主画面参考</label><input id="s1_img" placeholder="开场中景口播" /></div>
+        <div class="dc"><label>产品细节</label><input id="s1_prod" placeholder="产品亮相镜头" /></div>
+        <div class="dc"><label>场景参考</label><input id="s1_bg" placeholder="拍摄背景" /></div>
+      </div>
+      <div class="field"><label>口播文案</label><textarea id="s1_copy" oninput="updateProg()" placeholder="开场痛点文案…"></textarea></div>
+    </div>
+  </div>
+
+  <div class="seg-block">
+    <div class="seg-bar" onclick="toggleSeg(2)">
+      <div class="seg-bl"><span class="seg-pill s2p">第2段</span><span class="seg-name">使用验证 + 功能展示</span><span class="seg-time">12–24秒</span></div>
+      <span id="chev2" style="color:var(--text3);font-size:14px">▾</span>
+    </div>
+    <div class="seg-body" id="sb2" style="display:none">
+      <div class="tip"><span>信任建立区，实拍演示比口说功能更有说服力。</span></div>
+      <div class="shot-row" id="shots_b"></div>
+      <div class="d3">
+        <div class="dc"><label>主画面参考</label><input id="s2_img" placeholder="使用演示镜头" /></div>
+        <div class="dc"><label>产品细节</label><input id="s2_prod" placeholder="功能特写" /></div>
+        <div class="dc"><label>场景参考</label><input id="s2_bg" placeholder="使用场景" /></div>
+      </div>
+      <div class="field"><label>口播文案</label><textarea id="s2_copy" oninput="updateProg()" placeholder="功能验证文案…"></textarea></div>
+    </div>
+  </div>
+
+  <div class="seg-block">
+    <div class="seg-bar" onclick="toggleSeg(3)">
+      <div class="seg-bl"><span class="seg-pill s3p">第3段</span><span class="seg-name">佩戴展示 + 转化收尾</span><span class="seg-time">24–35秒</span></div>
+      <span id="chev3" style="color:var(--text3);font-size:14px">▾</span>
+    </div>
+    <div class="seg-body" id="sb3" style="display:none">
+      <div class="tip"><span>结尾给出下单理由，留下记忆点，引导行动。</span></div>
+      <div class="shot-row" id="shots_c"></div>
+      <div class="d3">
+        <div class="dc"><label>主画面参考</label><input id="s3_img" placeholder="穿戴效果展示" /></div>
+        <div class="dc"><label>产品细节</label><input id="s3_prod" placeholder="品牌/卖点特写" /></div>
+        <div class="dc"><label>场景参考</label><input id="s3_bg" placeholder="收尾场景" /></div>
+      </div>
+      <div class="field"><label>口播文案</label><textarea id="s3_copy" oninput="updateProg()" placeholder="转化收尾文案…"></textarea></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn-s" onclick="goStep(1)">← 上一步</button>
+    <button class="btn-p" onclick="goStep(3)" style="padding:8px 20px;font-size:13px">生成提示词 →</button>
+  </div>
+</div>
+
+<div class="panel" id="p3">
+  <div class="metric-row">
+    <div class="metric"><div class="mv">24</div><div class="ml">总分镜数</div></div>
+    <div class="metric"><div class="mv" id="m_dur">35s</div><div class="ml">视频时长</div></div>
+    <div class="metric"><div class="mv">3</div><div class="ml">段落数</div></div>
+    <div class="metric"><div class="mv">6</div><div class="ml">锁定维度</div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title" style="margin-bottom:10px">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      一致性检查
+    </div>
+    <div class="checklist" id="checklist"></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="card-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Seedance 2.0 分镜提示词
+      </div>
+      <select id="out_seg" style="font-size:12px;padding:5px 8px;width:auto">
+        <option value="all">全部段落</option>
+        <option value="1">第1段</option>
+        <option value="2">第2段</option>
+        <option value="3">第3段</option>
+      </select>
+    </div>
+    <div class="out-box" id="out_box">点击下方按钮生成提示词…</div>
+    <div class="btn-row">
+      <button class="btn-p" onclick="genPrompt()">✦ 生成提示词</button>
+      <button class="copy-btn" id="copy_btn" onclick="copyOut()">⎘ 复制</button>
+    </div>
+  </div>
+  <div class="nav-foot">
+    <button class="btn-s" onclick="goStep(2)">← 返回故事板</button>
+    <div></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const shotSets=[
+  [['中景','开场引入'],['近景','产品亮相'],['中景','痛点讲解'],['特写','细节'],['中景','展示'],['近景','表情'],['全景','场景'],['中景','引产品']],
+  [['近景','拿产品'],['特写','功能'],['中景','演示'],['近景','效果'],['特写','验证'],['中景','反应'],['近景','特写'],['中景','总结']],
+  [['全景','整体效果'],['中景','讲优势'],['近景','亮点'],['特写','品牌'],['中景','场景'],['近景','引导'],['特写','购买'],['中景','结束']]
+];
+function renderShots(id,types){
+  const g=document.getElementById(id);if(!g)return;g.innerHTML='';
+  types.forEach((t,i)=>{
+    const b=document.createElement('div');b.className='shot';
+    b.innerHTML=`<span class="sn">${i+1}</span><span class="st">${t[0]}<br>${t[1]}</span>`;
+    b.onclick=()=>b.classList.toggle('sel');g.appendChild(b);
+  });
+}
+renderShots('shots_a',shotSets[0]);renderShots('shots_b',shotSets[1]);renderShots('shots_c',shotSets[2]);
+
+let curStep=0;
+function goStep(n){
+  document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===n));
+  document.querySelectorAll('.ni').forEach((item,i)=>{
+    item.classList.toggle('active',i===n);item.classList.toggle('done',i<n);
+    const nn=item.querySelector('.nn');
+    if(i<n)nn.textContent='✓';else nn.textContent=i+1;
+  });
+  curStep=n;updateProg();
+  if(n===3){buildChecklist();document.getElementById('m_dur').textContent=document.getElementById('f_dur').value.replace('约','');}
+  window.scrollTo(0,0);
+}
+
+function updateProg(){
+  const ids=['f_product','f_usp','f_target','f_host','d_person','d_goods','s1_copy','s2_copy','s3_copy','f_scene'];
+  const filled=ids.filter(id=>{const el=document.getElementById(id);return el&&el.value.trim().length>0;}).length;
+  const pct=Math.round(filled/ids.length*100);
+  document.getElementById('pfill').style.width=pct+'%';
+  document.getElementById('pct').textContent='完成度 '+pct+'%';
+  document.getElementById('steplbl').textContent='第 '+(curStep+1)+' 步，共 4 步';
+}
+
+function toggleSeg(n){
+  const body=document.getElementById('sb'+n);
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'block';
+}
+
+function getTags(id){return[...document.querySelectorAll('#'+id+' .tag.on')].map(t=>t.textContent).join('、')||'未选择';}
+
+function setField(id,val){
+  const el=document.getElementById(id);
+  if(el&&val){el.value=val;el.classList.add('ok');setTimeout(()=>el.classList.remove('ok'),2000);}
+}
+
+function showStatus(type,msg){
+  const bar=document.getElementById('ai_status');
+  const icon=document.getElementById('ai_icon');
+  const txt=document.getElementById('ai_msg');
+  bar.className='status show '+type;
+  icon.className=type==='loading'?'spin':'';
+  icon.textContent=type==='loading'?'↻':type==='done'?'✓':'✕';
+  txt.textContent=msg;
+  if(type!=='loading')setTimeout(()=>{bar.className='status';},3500);
+}
+
+async function doFill(){
+  const product=document.getElementById('f_product').value.trim();
+  if(!product){document.getElementById('f_product').focus();return;}
+  const btn=document.getElementById('ai_btn');
+  btn.disabled=true;
+  showStatus('loading','AI 正在生成「'+product+'」的内容建议…');
+  try{
+    const res=await fetch('/api/generate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({product})
+    });
+    const json=await res.json();
+    if(!res.ok)throw new Error(json.error||'请求失败');
+    setField('f_usp',json.usp);
+    setField('f_target',json.target);
+    setField('f_host',json.host);
+    setField('f_scene',json.scene);
+    setField('s1_copy',json.copy1);
+    setField('s2_copy',json.copy2);
+    setField('s3_copy',json.copy3);
+    setField('d_person',json.person);
+    setField('d_goods',json.goods);
+    showStatus('done','已自动填充 9 个字段，可按需修改');
+    updateProg();
+  }catch(e){
+    showStatus('err','生成失败：'+e.message);
+  }
+  btn.disabled=false;
+}
+
+function buildChecklist(){
+  const checks=[
+    {key:'f_product',label:'产品名称已填写',sub:'基础信息'},
+    {key:'f_usp',label:'核心卖点已填写',sub:'AI生成或手动填写'},
+    {key:'d_person',label:'人物外貌已锁定',sub:'确保人物前后不乱变'},
+    {key:'d_goods',label:'产品外观已锁定',sub:'确保产品不跑偏'},
+    {key:'s1_copy',label:'第1段文案已填写',sub:'开场痛点'},
+    {key:'s2_copy',label:'第2段文案已填写',sub:'功能验证'},
+    {key:'s3_copy',label:'第3段文案已填写',sub:'转化收尾'},
+  ];
+  const cl=document.getElementById('checklist');cl.innerHTML='';
+  checks.forEach(c=>{
+    const el=document.getElementById(c.key);const ok=el&&el.value.trim().length>0;
+    const div=document.createElement('div');div.className='ci';
+    div.innerHTML=`<div class="ck ${ok?'ok':'no'}">${ok?'✓':'–'}</div><div><div style="font-size:13px;color:var(--text)">${c.label}</div><div style="font-size:11px;color:var(--text3)">${c.sub}</div></div>`;
+    cl.appendChild(div);
+  });
+}
+
+function genPrompt(){
+  const product=document.getElementById('f_product').value||'（产品）';
+  const usp=document.getElementById('f_usp').value||'';
+  const host=document.getElementById('f_host').value||'主讲人';
+  const style=document.getElementById('f_style').value;
+  const person=document.getElementById('d_person').value;
+  const goods=document.getElementById('d_goods').value;
+  const scene=document.getElementById('d_scene2').value||document.getElementById('f_scene').value;
+  const acts=getTags('tg_act');const cams=getTags('tg_cam');const rhythms=getTags('tg_rhy');
+  const seg=document.getElementById('out_seg').value;
+  const block=(n,title,time,cid,iid,pid,bid)=>{
+    const copy=document.getElementById(cid)?.value||'';
+    const img=document.getElementById(iid)?.value||'';
+    const prod=document.getElementById(pid)?.value||'';
+    const bg=document.getElementById(bid)?.value||'';
+    let p=`▌ 第${n}段 · ${title}（${time}）\n`;
+    p+=`主体：${host}${person?' / '+person:''}\n`;
+    p+=`产品：${product}${goods?' / '+goods:''}\n`;
+    p+=`场景：${bg||scene||'室内真实场景'} · 风格：${style}\n`;
+    p+=`镜头：${cams} · 节奏：${rhythms}\n`;
+    p+=`动作：${acts}\n`;
+    if(img)p+=`画面参考：${img}\n`;
+    if(prod)p+=`产品细节：${prod}\n`;
+    if(copy)p+=`口播文案：${copy}\n`;
+    return p;
+  };
+  let out=`=== Seedance 2.0 分镜提示词 ===\n产品：${product}`;
+  if(usp)out+=` · 卖点：${usp}`;
+  out+=`\n风格：${style} · 一致性五要素全开\n\n`;
+  if(seg==='1'||seg==='all')out+=block(1,'开场痛点+产品展示','0-12s','s1_copy','s1_img','s1_prod','s1_bg')+'\n';
+  if(seg==='2'||seg==='all')out+=block(2,'使用验证+功能展示','12-24s','s2_copy','s2_img','s2_prod','s2_bg')+'\n';
+  if(seg==='3'||seg==='all')out+=block(3,'佩戴展示+转化收尾','24-35s','s3_copy','s3_img','s3_prod','s3_bg')+'\n';
+  out+=`▌ 一致性要求\n01 前后关联：每段人物/场景/产品与上段保持一致\n02 1:1复刻：参考对标视频镜头语言和节奏\n03 人物产品一致：同人同产品贯穿全片\n04 减少抽卡：锁定参考图减少随机生成\n05 接入工作流：可导入智能体工作流批量执行`;
+  const box=document.getElementById('out_box');box.textContent=out;box.classList.add('has');
+}
+
+function copyOut(){
+  const text=document.getElementById('out_box').textContent;
+  if(text.includes('点击'))return;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('copy_btn');
+    btn.classList.add('copied');btn.textContent='✓ 已复制';
+    setTimeout(()=>{btn.classList.remove('copied');btn.textContent='⎘ 复制';},2000);
+  });
+}
+updateProg();
+</script>
+</body>
+</html>
